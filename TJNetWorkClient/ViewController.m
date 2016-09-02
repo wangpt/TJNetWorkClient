@@ -7,7 +7,7 @@
 //
 
 #import "ViewController.h"
-
+#import "TJNetWorkClient+Cache.h"
 @interface ViewController ()
 
 @end
@@ -17,6 +17,15 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+    [TJNetWorkClient requestWithType:HttpRequestTypeGet withUrlString:@"" cache:0 params:nil progress:^(NSProgress *uploadProgress) {
+        NSLog(@"%lld_____%lld",uploadProgress.completedUnitCount,uploadProgress.totalUnitCount);
+    } success:^(id response) {
+        NSLog(@"success");
+    } fail:^(NSError *error) {
+        NSLog(@"error");
+
+    }];
+    
 }
 
 - (void)didReceiveMemoryWarning {

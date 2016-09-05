@@ -1,10 +1,11 @@
 # TJNetWorkClient
 # AFNetWorking 3.1.0封装
-
+##  缓存策略
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;//缓存策略
-##
+
+#数据请求封装
+##带进度回调的请求
 /**
-*  带进度回调的请求
 *
 *  @param url              请求路径
 *  @param cache            缓存策略
@@ -15,7 +16,7 @@
 *
 *  @return 返回的对象中可取消请求
 */
-##
+
 + (TJURLSessionTask *)requestWithType:(HttpRequestType)type
                         withUrlString:(NSString *)url
                                 cache:(NSURLRequestCachePolicy)cache
@@ -23,8 +24,8 @@
                              progress:(void (^)(NSProgress *uploadProgress))progressBlock
                               success:(void(^)(id response))successBlock
                                  fail:(void(^)(NSError *error))failBlock;
+##GET请求
 /**
-*  GET请求
 *
 *  @param url              请求路径
 *  @param params           拼接参数
@@ -37,8 +38,8 @@
                    params:(NSDictionary *)params
                   success:(void(^)(id response))successBlock
                      fail:(void(^)(NSError *error))failBlock;
+##POST请求
 /**
-*  POST请求
 *
 *  @param url              请求路径
 *  @param params           拼接参数
@@ -51,9 +52,9 @@
                     params:(NSDictionary *)params
                    success:(void(^)(id response))successBlock
                       fail:(void(^)(NSError *error))failBlock;
+##下载文件
 
 /**
-*  下载文件
 *
 *  @param url      请求地址
 *  @param fileDir  文件存储目录(默认存储目录为Download)
@@ -68,9 +69,9 @@
                       progress:(void (^)(NSProgress *downloadProgress))progress
                        success:(void(^)(NSString *url, NSURL *filePath))success
                           fail:(void (^)(NSError *error))failure;
+##上传文件
 
 /**
-*  上传文件
 *
 *  @param url      请求地址
 *  @param params   拼接参数

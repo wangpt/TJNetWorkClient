@@ -57,7 +57,7 @@ typedef NSURLSessionTask TJURLSessionTask;
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;//缓存策略
 
 /**
- *  请求
+ *  带进度回调的请求
  *
  *  @param url              请求路径
  *  @param cache            缓存策略

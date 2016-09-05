@@ -17,14 +17,14 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    [TJNetWorkClient requestWithType:HttpRequestTypeGet withUrlString:@"" cache:0 params:nil progress:^(NSProgress *uploadProgress) {
-        NSLog(@"%lld_____%lld",uploadProgress.completedUnitCount,uploadProgress.totalUnitCount);
-    } success:^(id response) {
-        NSLog(@"success");
-    } fail:^(NSError *error) {
-        NSLog(@"error");
-
-    }];
+    TJNetWorkClient *client=[[TJNetWorkClient alloc]init];
+    [client GET:@"http://c.m.163.com//nc/article/headline/T1348647853363/0-20.html"
+         params:nil
+        success:^(id response) {
+            NSLog(@"%@",response);
+        } fail:^(NSError *error) {
+            NSLog(@"%@",error.localizedDescription);
+        }];
     
 }
 

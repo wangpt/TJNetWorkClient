@@ -80,6 +80,9 @@ static NSTimeInterval   requestTimeout = 20.f;
     }
 }
 #pragma mark - 网络请求GET
+- (TJURLSessionTask *)GET:(NSString *)url params:(NSDictionary *)params success:(void (^)(id))successBlock fail:(void (^)(NSError *))failBlock{
+    return [self GET:url params:params progress:nil success:successBlock fail:failBlock];
+}
 
 - (TJURLSessionTask *)GET:(NSString *)url
                    params:(NSDictionary *)params
@@ -88,7 +91,7 @@ static NSTimeInterval   requestTimeout = 20.f;
                      fail:(void(^)(NSError *error))failBlock{
     AFHTTPSessionManager *manager = [self manager];
     return  [manager GET:url parameters:params progress:^(NSProgress * _Nonnull uploadProgress) {
-        progressBlock(uploadProgress);
+        progressBlock ? progressBlock(uploadProgress) : nil;
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
         successBlock(responseObject);
@@ -100,6 +103,9 @@ static NSTimeInterval   requestTimeout = 20.f;
 
 }
 #pragma mark - 网络请求POST
+- (TJURLSessionTask *)POST:(NSString *)url params:(NSDictionary *)params success:(void (^)(id))successBlock fail:(void (^)(NSError *))failBlock{
+    return [self POST:url params:params progress:nil success:successBlock fail:failBlock];
+}
 
 - (TJURLSessionTask *)POST:(NSString *)url
                     params:(NSDictionary *)params
@@ -108,7 +114,7 @@ static NSTimeInterval   requestTimeout = 20.f;
                       fail:(void(^)(NSError *error))failBlock{
     AFHTTPSessionManager *manager = [self manager];
    return  [manager POST:url parameters:params progress:^(NSProgress * _Nonnull uploadProgress) {
-        progressBlock(uploadProgress);
+       progressBlock ? progressBlock(uploadProgress) : nil;
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
 

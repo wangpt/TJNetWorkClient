@@ -80,7 +80,6 @@ typedef NSURLSessionTask TJURLSessionTask;
  *
  *  @param url              请求路径
  *  @param params           拼接参数
- *  @param progressBlock    进度回调
  *  @param successBlock     成功回调
  *  @param failBlock        失败回调
  *
@@ -88,7 +87,6 @@ typedef NSURLSessionTask TJURLSessionTask;
  */
 - (TJURLSessionTask *)GET:(NSString *)url
                    params:(NSDictionary *)params
-                 progress:(void (^)(NSProgress *uploadProgress))progressBlock
                   success:(void(^)(id response))successBlock
                      fail:(void(^)(NSError *error))failBlock;
 /**
@@ -96,7 +94,6 @@ typedef NSURLSessionTask TJURLSessionTask;
  *
  *  @param url              请求路径
  *  @param params           拼接参数
- *  @param progressBlock    进度回调
  *  @param successBlock     成功回调
  *  @param failBlock        失败回调
  *
@@ -104,7 +101,6 @@ typedef NSURLSessionTask TJURLSessionTask;
  */
 - (TJURLSessionTask *)POST:(NSString *)url
                    params:(NSDictionary *)params
-                  progress:(void (^)(NSProgress *uploadProgress))progressBlock
                    success:(void(^)(id response))successBlock
                       fail:(void(^)(NSError *error))failBlock;
 
@@ -113,7 +109,6 @@ typedef NSURLSessionTask TJURLSessionTask;
  *
  *  @param url      请求地址
  *  @param fileDir  文件存储目录(默认存储目录为Download)
- 
  *  @param progress 文件下载的进度信息
  *  @param success  下载成功的回调(回调参数filePath:文件的路径)
  *  @param failure  下载失败的回调

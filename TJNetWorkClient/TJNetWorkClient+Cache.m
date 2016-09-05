@@ -74,6 +74,7 @@
     return size;
 }
 + (void)deleteAllCacheOnCompletion:(void(^)())completion{
+    [[NSURLCache sharedURLCache] removeAllCachedResponses];
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         NSString *cachPath = [ NSSearchPathForDirectoriesInDomains ( NSCachesDirectory , NSUserDomainMask , YES ) objectAtIndex : 0];
         NSArray *files = [[ NSFileManager defaultManager ] subpathsAtPath :cachPath];
@@ -100,6 +101,7 @@
 
 }
 + (NSString *)diskCacheSizeWithOtherSize:(NSUInteger)otherSize{
+    [[NSURLCache sharedURLCache] removeAllCachedResponses];
     NSUInteger size = [TJNetWorkClient getResponseCacheSize];
     size += [TJNetWorkClient getDownFileCacheSize];
     size += otherSize;

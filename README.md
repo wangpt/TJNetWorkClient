@@ -1,11 +1,10 @@
-# TJNetWorkClient介绍
-# AFNetWorking 3.1.0封装
-##  缓存策略
-@property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;//缓存策略
+# TJNetWorkClient的介绍（AFNetWorking 3.1.0封装）
 
-#数据请求封装
+##缓存策略
 
-##带进度回调的请求
+@property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;
+
+##数据请求
 
 + (TJURLSessionTask *)requestWithType:(HttpRequestType)type
                         withUrlString:(NSString *)url

@@ -70,8 +70,8 @@ static NSTimeInterval   requestTimeout = 20.f;
                             fail:(void(^)(NSError *error))failBlock{
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
    TJNetWorkClient *manager= [self sharedClient];
-    manager.cachePolicy=cache;
     if (type == HttpRequestTypeGet) {
+        manager.cachePolicy=cache;
         return [manager GET:url params:params progress:progressBlock success:successBlock fail:failBlock];
 
     }else{

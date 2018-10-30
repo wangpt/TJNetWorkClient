@@ -97,53 +97,6 @@
             endingLineNumber = "168"
             landmarkName = "+GET:parameters:progress:success:fail:"
             landmarkType = "7">
-            <Locations>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "+[TJNetWorkClient GET:parameters:progress:success:fail:]"
-                  moduleName = "TJNetWorkClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/tao/Desktop/TJNetWorkClient/TJNetWorkClient/TJNetWorkClient.m"
-                  timestampString = "562588028.676144"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "168"
-                  endingLineNumber = "168"
-                  offsetFromSymbolStart = "240">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "__56+[TJNetWorkClient GET:parameters:progress:success:fail:]_block_invoke"
-                  moduleName = "TJNetWorkClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/tao/Desktop/TJNetWorkClient/TJNetWorkClient/TJNetWorkClient.m"
-                  timestampString = "562588028.677883"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "168"
-                  endingLineNumber = "168"
-                  offsetFromSymbolStart = "24">
-               </Location>
-               <Location
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "__destroy_helper_block_.117"
-                  moduleName = "TJNetWorkClient"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/tao/Desktop/TJNetWorkClient/TJNetWorkClient/TJNetWorkClient.m"
-                  timestampString = "562588028.679449"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "168"
-                  endingLineNumber = "168"
-                  offsetFromSymbolStart = "20">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy

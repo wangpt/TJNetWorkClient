@@ -123,7 +123,7 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&parseError];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
-+ (BOOL)validateResult:(TJURLSessionTask *)task error:(NSError * _Nullable __autoreleasing *)error {
++ (BOOL)validateResult:(TJURLSessionTask *)task responseObject:(id)responseObject error:(NSError * _Nullable __autoreleasing *)error {
     NSHTTPURLResponse *request = (NSHTTPURLResponse *)task.response;
     NSInteger statusCode = request.statusCode;
     if (statusCode>=200 &&statusCode <= 299) {
@@ -163,19 +163,19 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
 + (TJURLSessionTask *)GET:(NSString *)urlString
                parameters:(id)parameters
                  progress:(void (^)(NSProgress * _Nonnull))progressBlock
-                  success:(void(^)(TJURLSessionTask *tj_Task, id tj_ResponseObject))successBlock
-                  fail:(void(^)(TJURLSessionTask *task, NSError *error))failBlock{
+                  success:(TJHttpRequestSuccess)successBlock
+                  fail:(TJHttpRequestFailed)failBlock{
     NSURLSessionTask *sessionTask = [_sessionManager GET:urlString parameters:parameters progress:^(NSProgress * _Nonnull uploadProgress) {
         progressBlock? progressBlock(uploadProgress):nil;
-    } success:^(NSURLSessionDataTask * _Nonnull dataTask, id  _Nullable dataResponseObject) {
-        if (_isOpenLog) {NSLog(@"responseObject = %@",dataResponseObject);}
+    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
         dispatch_async(dispatch_get_main_queue(), ^{
-            [[self allSessionTask] removeObject:dataTask];
-            if ([self validateResult:dataTask error:nil]) {
-                successBlock? successBlock(dataTask,dataResponseObject):nil;
+            [[self allSessionTask] removeObject:task];
+            if ([self validateResult:task responseObject:responseObject error:nil]) {
+                successBlock? successBlock(task,responseObject):nil;
             }else{
-                NSError * tempError = [self errorResult:dataTask];
-                failBlock? failBlock(dataTask,tempError):nil;
+                NSError * tempError = [self errorResult:task];
+                failBlock? failBlock(task,tempError):nil;
             }
         });
     } failure:^(NSURLSessionDataTask * _Nullable dataTask, NSError * _Nonnull dataError) {
@@ -203,7 +203,7 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
         dispatch_async(dispatch_get_main_queue(), ^{
             if (_isOpenLog) {NSLog(@"responseObject = %@",dataResponseObject);}
             [[self allSessionTask] removeObject:dataTask];
-            if ([self validateResult:dataTask error:nil]) {
+            if ([self validateResult:dataTask responseObject:dataResponseObject error:nil]) {
                 successBlock? successBlock(dataTask,dataResponseObject):nil;
             }else{
                 NSError * tempError = [self errorResult:dataTask];

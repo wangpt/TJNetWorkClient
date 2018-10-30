@@ -1,6 +1,0 @@
-framework module Pods_TJNetWorkClient {
-  umbrella header "Pods-TJNetWorkClient-umbrella.h"
-
-  export *
-  module * { export * }
-}

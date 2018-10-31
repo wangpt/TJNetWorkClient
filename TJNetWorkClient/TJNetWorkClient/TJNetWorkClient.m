@@ -32,6 +32,7 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
     _sessionManager.responseSerializer = [AFJSONResponseSerializer serializer];
     //header 设置
     _sessionManager.securityPolicy     = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];
+    //    _sessionManager.securityPolicy.allowInvalidCertificates = YES;
     //设置请求内容的类型
     [_sessionManager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 }
@@ -144,7 +145,7 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
 }
 
 #pragma mark - 网络请求集合
-+ (TJURLSessionTask *)requestWithType:(HttpRequestType)type
++ (TJURLSessionTask *)tj_requestWithType:(HttpRequestType)type
                                    urlString:(NSString *)urlString
                                   parameters:(id)parameters
                                     progress:(void (^)(NSProgress *uploadProgress))progressBlock

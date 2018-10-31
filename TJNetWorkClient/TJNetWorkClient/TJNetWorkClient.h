@@ -118,7 +118,7 @@ typedef void(^TJHttpRequestFailed)(TJURLSessionTask *task,NSError *error);
  *
  *  @return 返回的对象中可取消请求
  */
-+ (TJURLSessionTask *)requestWithType:(HttpRequestType)type
++ (TJURLSessionTask *)tj_requestWithType:(HttpRequestType)type
                             urlString:(NSString *)urlString
                            parameters:(_Nullable id)parameters
                              progress:(void (^_Nullable)(NSProgress *uploadProgress))progressBlock
@@ -128,8 +128,8 @@ typedef void(^TJHttpRequestFailed)(TJURLSessionTask *task,NSError *error);
 /**
  *  Get请求
  *
- *  @param urlString              请求路径
- *  @param parameters           拼接参数
+ *  @param urlString        请求路径
+ *  @param parameters       拼接参数
  *  @param successBlock     成功回调
  *  @param failBlock        失败回调
  *
@@ -145,8 +145,8 @@ typedef void(^TJHttpRequestFailed)(TJURLSessionTask *task,NSError *error);
 /**
  *  POST请求
  *
- *  @param urlString              请求路径
- *  @param parameters           拼接参数
+ *  @param urlString        请求路径
+ *  @param parameters       拼接参数
  *  @param successBlock     成功回调
  *  @param failBlock        失败回调
  *

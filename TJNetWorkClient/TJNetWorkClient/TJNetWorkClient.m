@@ -35,6 +35,9 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
     //    _sessionManager.securityPolicy.allowInvalidCertificates = YES;
     //设置请求内容的类型
     [_sessionManager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+    //authentication
+//    [_sessionManager.requestSerializer setValue:[LoginEntity readAccessToken] forHTTPHeaderField:@"authorization"];
+
 }
 /**
  存储着所有的请求task数组
@@ -118,12 +121,8 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
 }
 
 
-#pragma mark - helper
-- (NSString*)dictionaryToJson:(NSDictionary *)dic{
-    NSError *parseError = nil;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dic options:NSJSONWritingPrettyPrinted error:&parseError];
-    return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-}
+#pragma mark - Validate
+
 + (BOOL)validateResult:(TJURLSessionTask *)task responseObject:(id)responseObject error:(NSError * _Nullable __autoreleasing *)error {
     NSHTTPURLResponse *request = (NSHTTPURLResponse *)task.response;
     NSInteger statusCode = request.statusCode;
@@ -146,19 +145,23 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
 
 #pragma mark - 网络请求集合
 + (TJURLSessionTask *)tj_requestWithType:(HttpRequestType)type
-                                   urlString:(NSString *)urlString
-                                  parameters:(id)parameters
-                                    progress:(void (^)(NSProgress *uploadProgress))progressBlock
-                                     success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                                        fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
+                               urlString:(NSString *)urlString
+                              parameters:(id)parameters
+                                progress:(void (^)(NSProgress *uploadProgress))progressBlock
+                                 success:(void(^)(TJURLSessionTask *task,id response))successBlock
+                                    fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
     if (type == HttpRequestTypeGet) {
         return [self GET:urlString parameters:parameters progress:progressBlock success:successBlock fail:failBlock];
     }else if (type == HttpRequestTypePost){
         return [self POST:urlString parameters:parameters progress:progressBlock success:successBlock fail:failBlock];
-    }else{
-        return [self GET:urlString parameters:parameters progress:progressBlock success:successBlock fail:failBlock];
+    }else if (type == HttpRequestTypePut){
+        return [self PUT:urlString parameters:parameters success:successBlock fail:failBlock];
+    }
+    else{
+        return [self DELE:urlString parameters:parameters success:successBlock fail:failBlock];
     }
 }
+
 
 #pragma mark - Get
 + (TJURLSessionTask *)GET:(NSString *)urlString
@@ -192,34 +195,185 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
     return sessionTask;
 }
 
+
 #pragma mark - Post
 + (TJURLSessionTask *)POST:(NSString *)urlString
                 parameters:(id)parameters
                   progress:(void (^)(NSProgress *uploadProgress))progressBlock
-                   success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                      fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
-    return  [_sessionManager POST:urlString parameters:parameters progress:^(NSProgress * _Nonnull uploadProgress) {
+                   success:(TJHttpRequestSuccess)successBlock
+                      fail:(TJHttpRequestFailed)failBlock{
+    NSURLSessionTask *sessionTask = [_sessionManager POST:urlString parameters:parameters progress:^(NSProgress * _Nonnull uploadProgress) {
         progressBlock ? progressBlock(uploadProgress) : nil;
-    } success:^(NSURLSessionDataTask * _Nonnull dataTask, id  _Nullable dataResponseObject) {
+    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (_isOpenLog) {NSLog(@"responseObject = %@",dataResponseObject);}
-            [[self allSessionTask] removeObject:dataTask];
-            if ([self validateResult:dataTask responseObject:dataResponseObject error:nil]) {
-                successBlock? successBlock(dataTask,dataResponseObject):nil;
+            if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
+            [[self allSessionTask] removeObject:task];
+            if ([self validateResult:task responseObject:responseObject error:nil]) {
+                successBlock? successBlock(task,responseObject):nil;
             }else{
-                NSError * tempError = [self errorResult:dataTask];
-                failBlock? failBlock(dataTask,tempError):nil;
+                NSError * tempError = [self errorResult:task];
+                failBlock? failBlock(task,tempError):nil;
             }
         });
-    } failure:^(NSURLSessionDataTask * _Nullable dataTask, NSError * _Nonnull dataError) {
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (_isOpenLog) {NSLog(@"error = %@",dataError);}
-            [[self allSessionTask] removeObject:dataTask];
-            NSError * tempError = [self errorResult:dataTask];
-            failBlock? failBlock(dataTask,tempError):nil;
+            if (_isOpenLog) {NSLog(@"error = %@",error);}
+            [[self allSessionTask] removeObject:task];
+            NSError * tempError = [self errorResult:task];
+            failBlock? failBlock(task,tempError):nil;
         });
-        
     }];
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
+}
+#pragma mark - POSTFORM
+
++ (TJURLSessionTask *)POSTFORM:(NSString *)urlString
+                  formDataDict:(NSDictionary * _Nullable)formDataDict
+                      progress:(void (^_Nullable)(NSProgress *))progressBlock
+                       success:(TJHttpRequestSuccess)successBlock
+                          fail:(TJHttpRequestFailed)failBlock{
+    NSURLSessionTask *sessionTask = [_sessionManager POST:urlString parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+        for (NSString *key in [formDataDict keyEnumerator])
+        {
+            NSData* xmlData = [[formDataDict valueForKey:key] dataUsingEncoding:NSUTF8StringEncoding];
+            [formData appendPartWithFormData:xmlData name:key];
+        }
+    } progress:^(NSProgress * _Nonnull uploadProgress) {
+        progressBlock ? progressBlock(uploadProgress) : nil;
+    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
+            [[self allSessionTask] removeObject:task];
+            if ([self validateResult:task responseObject:responseObject error:nil]) {
+                successBlock? successBlock(task,responseObject):nil;
+            }else{
+                NSError * tempError = [self errorResult:task];
+                failBlock? failBlock(task,tempError):nil;
+            }
+        });
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"error = %@",error);}
+            [[self allSessionTask] removeObject:task];
+            NSError * tempError = [self errorResult:task];
+            failBlock? failBlock(task,tempError):nil;
+        });
+    }];
+    
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
+}
+#pragma mark - POSTBODY
++ (TJURLSessionTask *)POSTBODY:(NSString *)urlString
+                    parameters:(_Nullable id)parameters
+                      httpBody:(NSDictionary * _Nullable)httpBody
+                uploadProgress:(void (^)(NSProgress *uploadProgress))uploadProgressBlock
+              downloadProgress:(void (^)(NSProgress *uploadProgress))downloadProgressBlock
+                       success:(TJHttpRequestSuccess)successBlock
+                          fail:(TJHttpRequestFailed)failBlock{
+    NSMutableURLRequest *request = [[AFJSONRequestSerializer serializer] requestWithMethod:@"POST" URLString:urlString parameters:parameters error:nil];
+    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+//    [request addValue:[LoginEntity readAccessToken] forHTTPHeaderField:@"authorization"];
+    if (httpBody) {
+        NSError *parseError = nil;
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:httpBody options:NSJSONWritingPrettyPrinted error:&parseError];
+        NSString * string = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSData *body  =[string dataUsingEncoding:NSUTF8StringEncoding];
+        [request setHTTPBody:body];
+    }
+    __block NSURLSessionTask *sessionTask = [_sessionManager dataTaskWithRequest:request uploadProgress:^(NSProgress * _Nonnull uploadProgress) {
+        uploadProgressBlock ? uploadProgressBlock(uploadProgress) : nil;
+    } downloadProgress:^(NSProgress * _Nonnull downloadProgress) {
+        downloadProgressBlock ? downloadProgressBlock(downloadProgress) : nil;
+    } completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
+        if (!error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
+                [[self allSessionTask] removeObject:sessionTask];
+                if ([self validateResult:sessionTask responseObject:responseObject error:nil]) {
+                    successBlock? successBlock(sessionTask,responseObject):nil;
+                }else{
+                    NSError * tempError = [self errorResult:sessionTask];
+                    failBlock? failBlock(sessionTask,tempError):nil;
+                }
+            });
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (_isOpenLog) {NSLog(@"error = %@",error);}
+                [[self allSessionTask] removeObject:sessionTask];
+                NSError * tempError = [self errorResult:sessionTask];
+                failBlock? failBlock(sessionTask,tempError):nil;
+            });
+        }
+    }];
+    
+    [sessionTask resume];
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
+}
+
+
+#pragma mark - DELE
+
++ (TJURLSessionTask *)DELE:(NSString *)urlString
+                parameters:(_Nullable id)parameters
+                   success:(TJHttpRequestSuccess)successBlock
+                      fail:(TJHttpRequestFailed)failBlock{
+    NSURLSessionTask *sessionTask = [_sessionManager DELETE:urlString parameters:parameters success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
+            [[self allSessionTask] removeObject:task];
+            if ([self validateResult:task responseObject:responseObject error:nil]) {
+                successBlock? successBlock(task,responseObject):nil;
+            }else{
+                NSError * tempError = [self errorResult:task];
+                failBlock? failBlock(task,tempError):nil;
+            }
+        });
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"error = %@",error);}
+            [[self allSessionTask] removeObject:task];
+            NSError * tempError = [self errorResult:task];
+            failBlock? failBlock(task,tempError):nil;
+        });
+    }];
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
+}
+#pragma mark - PUT
++ (TJURLSessionTask *)PUT:(NSString *)urlString
+               parameters:(_Nullable id)parameters
+                  success:(TJHttpRequestSuccess)successBlock
+                     fail:(TJHttpRequestFailed)failBlock{
+    NSURLSessionTask *sessionTask = [_sessionManager PUT:urlString parameters:parameters success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"responseObject = %@",responseObject);}
+            [[self allSessionTask] removeObject:task];
+            if ([self validateResult:task responseObject:responseObject error:nil]) {
+                successBlock? successBlock(task,responseObject):nil;
+            }else{
+                NSError * tempError = [self errorResult:task];
+                failBlock? failBlock(task,tempError):nil;
+            }
+        });
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (_isOpenLog) {NSLog(@"error = %@",error);}
+            [[self allSessionTask] removeObject:task];
+            NSError * tempError = [self errorResult:task];
+            failBlock? failBlock(task,tempError):nil;
+        });
+    }];
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
+    
 }
 
 #pragma mark - 文件下载
@@ -227,12 +381,10 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
                        fileDir:(NSString *)fileDir
                       progress:(void (^)(NSProgress *downloadProgress))progressBlock
                        success:(void(^)(NSString *url, NSURL *filePath))successBlock
-                       fail:(void (^)(NSError *error))failBlock{
-   
-    NSURLSessionDownloadTask *downloadTask = [_sessionManager downloadTaskWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:url]] progress:^(NSProgress * _Nonnull downloadProgress) {
+                          fail:(void (^)(NSError *error))failBlock{
+    __block NSURLSessionDownloadTask *downloadTask = [_sessionManager downloadTaskWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:url]] progress:^(NSProgress * _Nonnull downloadProgress) {
         //下载进度
         progressBlock ? progressBlock(downloadProgress) : nil;
-        
     } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
         NSString *downloadDir=[self pathInCacheDirectory:fileDir?:kPath_TJDownFileCache];
         //创建Download目录
@@ -244,17 +396,19 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
         
     } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
         [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
+        [[self allSessionTask] removeObject:downloadTask];
         if (error) {
-            NSError * tempError = [self errorResult:nil];
-            failBlock? failBlock(tempError):nil;
+            failBlock ? failBlock(error) : nil;
         }else{
             successBlock ? successBlock(url,filePath /** NSURL->NSString*/) : nil;
         }
     }];
     //开始下载
     [downloadTask resume];
+    // 添加sessionTask到数组
+    downloadTask ? [[self allSessionTask] addObject:downloadTask] : nil ;
     return downloadTask;
-
+    
 }
 
 #pragma mark - 文件上传
@@ -264,7 +418,7 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
                     progress:(void (^)(NSProgress *uploadProgress))progressBlock
                      success:(void(^)(id response))successBlock
                         fail:(void(^)(NSError *error))failBlock{
-    return [_sessionManager POST:url parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+    __block NSURLSessionTask *sessionTask =  [_sessionManager POST:url parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         [fileArray enumerateObjectsUsingBlock:^(TJFileModel *  _Nonnull model, NSUInteger idx, BOOL * _Nonnull stop) {
             NSString *name=[NSString stringWithFormat:@"file"];//服务器用于区分
             NSString *fileName=[NSString stringWithFormat:@"%@%@",name,[TJFileModel fileNameSuffixesWithFileType:model.fileType]];//服务器存储的文件名字
@@ -293,169 +447,25 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
                         [formData appendPartWithFileURL:[NSURL fileURLWithPath:model.fileUrl] name:name fileName:fileName mimeType:mimeType error:NULL];
                     }
             }
+            
         }];
+        
     } progress:^(NSProgress * _Nonnull uploadProgress) {
         //上传进度
         progressBlock ? progressBlock(uploadProgress) : nil;
-        
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
+        [[self allSessionTask] removeObject:sessionTask];
         successBlock(responseObject);
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-        NSError * tempError = [self errorResult:nil];
-        failBlock? failBlock(tempError):nil;
+        [[self allSessionTask] removeObject:sessionTask];
+        failBlock ? failBlock(error) : nil;
     }];
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    return sessionTask;
 }
 
-#pragma mark - 网络请求Postform
-- (TJURLSessionTask *)postForm:(NSString*)url
-                         params:(NSDictionary *)params
-                       success:(void(^)(TJURLSessionTask *  response,id responseObject))successBlock
-                          fail:(void(^)(TJURLSessionTask *  response,NSError *error))failBlock{
-    return [_sessionManager POST:url parameters:nil constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
-        for (NSString *key in [params keyEnumerator])
-        {
-            NSData* xmlData = [[params valueForKey:key] dataUsingEncoding:NSUTF8StringEncoding];
-            [formData appendPartWithFormData:xmlData name:key];
-        }
-    } progress:^(NSProgress * _Nonnull uploadProgress) {
-    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-//        successBlock(task,responseObject);
-        [self responseSuccessDataTask:task responseObject:responseObject success:successBlock fail:failBlock];
-    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-        failBlock(task,error);
-    }];
-}
-
-
-#pragma mark - 网络请求DELE
-- (TJURLSessionTask *)DELE:(NSString *)url
-                    params:(NSDictionary *)params
-                   success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                      fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock
-{
-    
-    return [self DELE:url params:params progress:nil success:successBlock fail:failBlock];
-
-    
-}
-- (TJURLSessionTask *)DELE:(NSString *)url
-                    params:(NSDictionary *)params
-                  progress:(void (^)(NSProgress *uploadProgress))progressBlock
-                   success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                      fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
-   return  [_sessionManager DELETE:url parameters:params success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-       [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-       [self responseSuccessDataTask:task responseObject:responseObject success:successBlock fail:failBlock];
-    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-        failBlock(task,error);
-    }];
-}
-#pragma mark - 网络请求PUT
-- (TJURLSessionTask *)PUT:(NSString *)url
-                   params:(NSDictionary *)params
-                  success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                     fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
-    return [self PUT:url params:params progress:nil success:successBlock fail:failBlock];
-
-}
-- (TJURLSessionTask *)PUT:(NSString *)url
-                    params:(NSDictionary *)params
-                  progress:(void (^)(NSProgress *uploadProgress))progressBlock
-                   success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                      fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
-    return  [_sessionManager PUT:url parameters:params success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-        [self responseSuccessDataTask:task responseObject:responseObject success:successBlock fail:failBlock];
-    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-        failBlock(task,error);
-    }];
-    
-}
-
-#pragma mark - request success
-- (void)responseSuccessDataTask:(TJURLSessionTask *)task
-                 responseObject:(id)responseObject
-                        success:(void(^)(TJURLSessionTask *task,id response))successBlock
-                           fail:(void(^)(TJURLSessionTask *task,NSError *error))failBlock{
-    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)task.response;
-    if (httpResponse.statusCode == 200) {
-        if ([responseObject isKindOfClass:[NSArray class]]) {
-            successBlock(task,responseObject);
-        }else{
-            NSDictionary *respongseDic = responseObject;
-            int code =  ((NSNumber *)[respongseDic objectForKey:@"rc"]).intValue;
-            if (code == 200 || code == 0) {//在注册和登录时进行保存token
-                successBlock(task,responseObject);
-            }else{
-            }
-        }
-    }else{
-        successBlock(task,responseObject);
-    }
-}
-
-
-#pragma mark - 网络请求body
-- (TJURLSessionTask *)postBody:(NSString*)url
-                    parameters:(NSDictionary *)parameters
-                      bodyForm:(NSDictionary *)bodyForm
-                       success:(void(^)(NSURLResponse *  response,id responseObject))successBlock
-                          fail:(void(^)(NSURLResponse *  response,NSError *error))failBlock{
-    NSMutableURLRequest *request = [[AFJSONRequestSerializer serializer] requestWithMethod:@"POST" URLString:url parameters:parameters error:nil];
-    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-//    NSString *token =  [TJNetWorkClient getToken];
-//    if (token.length > 0) {
-//        [request addValue:token forHTTPHeaderField:@"authorization"];
-//    }
-    if (bodyForm) {
-        NSString *param = [self dictionaryToJson:bodyForm];
-        NSData *body  =[param dataUsingEncoding:NSUTF8StringEncoding];
-        [request setHTTPBody:body];
-    }
-    NSURLSessionDataTask *task =[_sessionManager dataTaskWithRequest:request completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
-        if (!error) {
-            successBlock(response,responseObject);
-        } else {
-            failBlock(response,error);
-            
-        }
-    }] ;
-    [task resume];
-    return task;
-}
-
-- (TJURLSessionTask *)getBody:(NSString*)url
-                   parameters:(NSDictionary *)parameters
-                        bodyForm:(NSDictionary *)bodyForm
-                      success:(void(^)(NSURLResponse *  response,id responseObject))successBlock
-                         fail:(void(^)(NSURLResponse *  response,NSError *error))failBlock{
-    NSMutableURLRequest *request = [[AFJSONRequestSerializer serializer] requestWithMethod:@"GET" URLString:url parameters:parameters error:nil];
-    [request addValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-//    NSString *token = [TJNetWorkClient getToken];
-//    [request addValue:token forHTTPHeaderField:@"authorization"];
-    if (bodyForm) {
-        NSString *param = [self dictionaryToJson:bodyForm];
-        NSData *body  =[param dataUsingEncoding:NSUTF8StringEncoding];
-        [request setHTTPBody:body];
-    }
-
-    NSURLSessionDataTask *task =[_sessionManager dataTaskWithRequest:request completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
-        if (!error) {
-            successBlock(response,responseObject);
-            
-        } else {
-            failBlock(response,error);
-        }
-    }] ;
-    [task resume];
-    return task;
-}
 
 
 @end

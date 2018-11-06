@@ -7,7 +7,7 @@
 //
 
 #import "ViewController.h"
-
+#import "TJNetWorkClient/TJNetWorkClient.h"
 @interface ViewController ()
 
 @end
@@ -17,6 +17,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+//    [TJNetWorkClient POST:@"" parameters:nil progress:nil success:^(TJURLSessionTask * _Nonnull task, id  _Nonnull responseObject) {
+//        NSLog(@"%@",responseObject);
+//    } fail:^(TJURLSessionTask * _Nonnull task, NSError * _Nonnull error) {
+//        NSLog(@"%@",error);
+//
+//    }];
+    
+
+    
+    
 }
 
 

@@ -135,8 +135,8 @@ static BOOL _isOpenLog;   // 是否已开启日志打印
 + (NSError *)errorResult:(TJURLSessionTask *)request{
     NSString * message = @"网络罢工了";
     NSInteger code = TJRequestValidationErrorInvalidNoNetWork;
-    if (![TJNetWorkClient tj_IsNetwork]) {
-        message = @"网络罢工了";//服务器连接超时
+    if ([TJNetWorkClient tj_IsNetwork]) {
+        message = @"连接失败";//服务器连接超时
         code = TJRequestValidationErrorInvalidNetWorkTimeOut;
     }
     NSError* vaildateError = [NSError errorWithDomain:TJRequestValidationErrorDomain code:code userInfo:@{NSLocalizedDescriptionKey:message}];
